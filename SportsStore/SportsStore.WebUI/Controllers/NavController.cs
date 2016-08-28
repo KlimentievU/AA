@@ -19,6 +19,7 @@ namespace SportsStore.WebUI.Controllers
         public ViewResult Menu(string category = null)
         {
             ViewBag.SelectedCategory = category;
+
             IEnumerable<string> categoties = repository.Products
                 .Select(x => x.Category)
                 .Distinct()
