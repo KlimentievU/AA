@@ -8,9 +8,14 @@
 
 @foreach (var link in Model)
 {
-    @Html.RouteLink(link, new { controller = "Product", action = "List", caregory = link, page = 1 },
+    <a href="~/@link" >@link</a>
+
+    @*@Html.RouteLink(link,
+    new { controller = "Product", action = "List",  link, page = 1 },
     new
     {
         @class = link == ViewBag.SelectedCategory ? "selected" : null
-    })
+    })*@
 }
+
+

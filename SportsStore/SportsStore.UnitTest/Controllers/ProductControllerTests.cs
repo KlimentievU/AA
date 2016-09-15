@@ -166,5 +166,215 @@ namespace SportsStore.WebUI.Controllers.Tests
             Assert.AreEqual(res3, 1);
             Assert.AreEqual(resAll, 5);
         }
+
+        [TestMethod]
+        public void Can_Add_New_Lines()
+        {
+            Product p1 = new Product {ProductID = 1,Name = "P1"}; //новые товары
+            Product p2 = new Product { ProductID = 2, Name = "P2"};
+
+            Cart target = new Cart(); // новая корзина
+
+            target.AddItem(p1,1);
+            target.AddItem(p2,1);
+
+            CartLine[] results = target.Lines.ToArray();
+
+            Assert.AreEqual(results.Length, 2);
+            Assert.AreEqual(results[0].Product, p1);
+            Assert.AreEqual(results[1].Product, p2);
+        }
+
+        [TestMethod]
+        public void Can_Add_Quantity_For_Existing_Lines()
+        {
+            Product p1 = new Product { ProductID = 1, Name = "P1" }; //новые товары
+            Product p2 = new Product { ProductID = 2, Name = "P2" };
+
+            Cart target = new Cart(); // новая корзина
+
+            target.AddItem(p1, 1);
+            target.AddItem(p2, 1);
+            target.AddItem(p1, 10);
+            target.AddItem(p2, 10);
+
+            CartLine[] results = target.Lines.OrderBy(c => c.Product.ProductID).ToArray();
+
+            Assert.AreEqual(results.Length, 2);
+            Assert.AreEqual(results[0].Quantity, 11);
+            Assert.AreEqual(results[1].Quantity, 11);
+        }
+
+        [TestMethod]
+        public void Can_Remove_Line()
+        {
+            Product p1 = new Product { ProductID = 1, Name = "P1" }; //новые товары
+            Product p2 = new Product { ProductID = 2, Name = "P2" };
+
+            Cart target = new Cart(); // новая корзина
+
+            target.AddItem(p1, 1);
+            target.AddItem(p2, 1);
+            target.AddItem(p1, 10);
+            target.AddItem(p2, 10);
+
+            target.RemoveLine(p1);
+            
+            Assert.AreEqual(target.Lines.Where(c=>c.Product == p1).Count(), 0);
+            Assert.AreEqual(target.Lines.Count(), 1);
+        }
+
+        [TestMethod]
+        public void Calculate_Cart_Total()
+        {
+            Product p1 = new Product { ProductID = 1, Name = "P1", Price = 100M}; //новые товары
+            Product p2 = new Product { ProductID = 2, Name = "P2", Price = 50M};
+
+            Cart target = new Cart(); // новая корзина
+
+            target.AddItem(p1, 1);
+            target.AddItem(p2, 1);
+            target.AddItem(p1, 3);
+
+
+            decimal result = target.ComputeTotalValue();
+
+            Assert.AreEqual(result, 450M);
+        }
+
+        [TestMethod]
+        public void Can_Clear_Content()
+        {
+            Product p1 = new Product { ProductID = 1, Name = "P1", Price = 100M }; //новые товары
+            Product p2 = new Product { ProductID = 2, Name = "P2", Price = 50M };
+
+            Cart target = new Cart(); // новая корзина
+
+            target.AddItem(p1, 1);
+            target.AddItem(p2, 1);
+
+            target.Clear();
+
+            Assert.AreEqual(target.Lines.Count(), 0);
+        }
+
+        ///////////////////////
+        [TestMethod]
+        public void Can_Add_To_Cart()
+        {
+            // Arrange - create the mock repository
+            Mock<IProductsRepository> mock = new Mock<IProductsRepository>();
+            mock.Setup(m => m.Products).Returns(new Product[] {
+ new Product {ProductID = 1, Name = "P1", Category = "Apples"},
+ }.AsQueryable());
+            // Arrange - create a Cart
+            Cart cart = new Cart();
+            // Arrange - create the controller
+            CartController target = new CartController(mock.Object);
+ // Act - add a product to the cart
+ target.AddToCart(cart, 1, null);
+            // Assert
+            Assert.AreEqual(cart.Lines.Count(), 1);
+            Assert.AreEqual(cart.Lines.ToArray()[0].Product.ProductID, 1);
+        }
+        [TestMethod]
+        public void Adding_Product_To_Cart_Goes_To_Cart_Screen()
+        {
+            // Arrange - create the mock repository
+            Mock<IProductsRepository> mock = new Mock<IProductsRepository>();
+            mock.Setup(m => m.Products).Returns(new Product[] {
+ new Product {ProductID = 1, Name = "P1", Category = "Apples"},
+ }.AsQueryable());
+            // Arrange - create a Cart
+            Cart cart = new Cart();
+            // Arrange - create the controller
+            CartController target = new CartController(mock.Object);
+            // Act - add a product to the cart
+            RedirectToRouteResult result = target.AddToCart(cart, 2, "myUrl");
+            // Assert
+            Assert.AreEqual(result.RouteValues["action"], "Index");
+            Assert.AreEqual(result.RouteValues["returnUrl"], "myUrl");
+        }
+        [TestMethod]
+        public void Can_View_Cart_Contents()
+        {
+            // Arrange - create a Cart
+            Cart cart = new Cart();
+            // Arrange - create the controller
+            CartController target = new CartController(null);
+            // Act - call the Index action method
+            CartIndexViewModel result = (CartIndexViewModel)target.Index(cart,
+           "myUrl").ViewData.Model;
+            // Assert
+            Assert.AreSame(result.cart,  cart);
+            Assert.AreEqual(result.ReturnUrl, "myUrl");
+        }
+
+
+        public void Index_Contains_All_Products()
+        {
+            Mock<IProductsRepository> mock = new Mock<IProductsRepository>();
+
+            mock.Setup(m => m.Products).Returns(new Product[]
+            {
+                new Product {ProductID = 1, Name = "P1"},
+                new Product {ProductID = 2, Name = "P2"},
+                new Product {ProductID = 3, Name = "P3"},
+
+            }.AsQueryable());
+
+            AdminController target = new AdminController(mock.Object);
+
+            Product[] result = ((IEnumerable<Product>) target.Index().ViewData.Model).ToArray();
+
+            Assert.AreEqual(result.Length,3);
+            Assert.AreEqual("P1", result[0].Name);
+            Assert.AreEqual("P2", result[1].Name);
+            Assert.AreEqual("P3", result[2].Name);
+        }
+
+
+        [TestMethod]
+        public void Can_Edit_Product()
+        {
+            // Arrange - create the mock repository
+            Mock<IProductsRepository> mock = new Mock<IProductsRepository>();
+            mock.Setup(m => m.Products).Returns(new Product[] {
+ new Product {ProductID = 1, Name = "P1"},
+ new Product {ProductID = 2, Name = "P2"},
+ new Product {ProductID = 3, Name = "P3"},
+ }.AsQueryable());
+            // Arrange - create the controller
+            AdminController target = new AdminController(mock.Object);
+            // Act
+            Product p1 = target.Edit(1).ViewData.Model as Product;
+            Product p2 = target.Edit(2).ViewData.Model as Product;
+            Product p3 = target.Edit(3).ViewData.Model as Product;
+            // Assert
+            Assert.AreEqual(1, p1.ProductID);
+            Assert.AreEqual(2, p2.ProductID);
+            Assert.AreEqual(3, p3.ProductID);
+        }
+        [TestMethod]
+        public void Cannot_Edit_Nonexistent_Product()
+        {
+            // Arrange - create the mock repository
+            Mock<IProductsRepository> mock = new Mock<IProductsRepository>();
+            mock.Setup(m => m.Products).Returns(new Product[] {
+ new Product {ProductID = 1, Name = "P1"},
+ new Product {ProductID = 2, Name = "P2"},
+ new Product {ProductID = 3, Name = "P3"},
+ }.AsQueryable());
+            // Arrange - create the controller
+            AdminController target = new AdminController(mock.Object);
+            // Act
+            Product result = (Product)target.Edit(4).ViewData.Model;
+            // Assert
+            Assert.IsNull(result);
+        }
+
+
+
+
     }
 }
