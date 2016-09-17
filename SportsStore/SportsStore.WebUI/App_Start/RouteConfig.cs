@@ -30,7 +30,8 @@ namespace SportsStore.WebUI
             );
 
             routes.MapRoute(null, "{category}",
-                new {controller = "Product", action = "List", page = 1});
+                new {controller = "Product", action = "List", category = (string)null, page = 1});
+
 
             routes.MapRoute(null,
                 "{category}/Page{page}", // kak /football/page1
